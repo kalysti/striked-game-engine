@@ -1,0 +1,12 @@
+{
+    "watch": [
+      "src/**/*",
+      "shaders/*",
+      "shaders/*"
+    ],
+    "ext": "js, css, ts, vert, frag",
+
+    "execMap": {
+      "ts": "ts-node"
+    }
+  }

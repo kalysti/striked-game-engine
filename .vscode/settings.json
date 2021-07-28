@@ -1,0 +1,11 @@
+{
+    "search.exclude": {
+        "**/build": true,
+        "**/examples": true,
+    },
+    "files.exclude": {
+        "**/build": true,
+        "**/examples": true,
+    },
+    "compile-hero.disable-compile-files-on-did-save-code": true,
+} 
