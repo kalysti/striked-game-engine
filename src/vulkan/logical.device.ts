@@ -1,9 +1,11 @@
-import { vkCreateDevice, VkDevice, VkDeviceCreateInfo, VkDeviceQueueCreateInfo, VkFormat, VkFormatProperties, vkGetPhysicalDeviceFormatProperties, VkInstance, VkPhysicalDevice, VkPhysicalDeviceFeatures, VK_FORMAT_D16_UNORM, VK_FORMAT_D16_UNORM_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_SPEC_VERSION, VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME, VK_KHR_SWAPCHAIN_EXTENSION_NAME } from "vulkan-api";
-import { ASSERT_VK_RESULT } from "../test.helpers";
+import { vkCreateDevice, vkDestroyDevice, VkDevice, VkDeviceCreateInfo, VkDeviceQueueCreateInfo, VkFormat, VkFormatProperties, vkGetPhysicalDeviceFormatProperties, VkPhysicalDevice, VkPhysicalDeviceFeatures, VK_EXT_LINE_RASTERIZATION_EXTENSION_NAME, VK_FORMAT_D16_UNORM, VK_FORMAT_D16_UNORM_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_KHR_SWAPCHAIN_EXTENSION_NAME } from "vulkan-api";
+import { ASSERT_VK_RESULT } from "../utils/helpers";
+import { PhysicalDevice } from "./physical.device";
 import { DeviceQueue } from "./quene.device";
+import { RenderBackplane } from "./render.backplane";
 
-export class LogicalDevice {
-    private physicalDevice: VkPhysicalDevice = new VkPhysicalDevice();
+export class LogicalDevice extends RenderBackplane {
+    private physicalDevice: PhysicalDevice ;
     private queue: DeviceQueue;
     private device: VkDevice = new VkDevice();
 
@@ -14,9 +16,9 @@ export class LogicalDevice {
     get handle() {
         return this.device;
     }
-    
+
     get handlePhysicalDevice() {
-        return this.physicalDevice;
+        return this.physicalDevice.handle;
     }
 
     getSupportedDepthFormat(physicalDevice: VkPhysicalDevice, depthFormat: VkFormat | null) {
@@ -44,18 +46,30 @@ export class LogicalDevice {
 
     depthFormat: VkFormat;
 
-    constructor(instance: VkInstance, physicalDevice: VkPhysicalDevice) {
+    constructor(physicalDevice: PhysicalDevice) {
+
+        super();
 
         this.physicalDevice = physicalDevice;
+        this.create();
 
+
+    }
+    protected onDestroy() {
+        vkDestroyDevice(this.device, null);
+    }
+
+    protected onCreate() {
+        this.device = new VkDevice();
         let deviceQueueInfo = new VkDeviceQueueCreateInfo();
         deviceQueueInfo.queueFamilyIndex = 0;
         deviceQueueInfo.queueCount = 1;
         deviceQueueInfo.pQueuePriorities = new Float32Array([1.0, 1.0, 1.0, 1.0]);
 
         let deviceExtensions = [
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME
-            
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+            VK_EXT_LINE_RASTERIZATION_EXTENSION_NAME 
+
         ];
 
         for (let ext of deviceExtensions) {
@@ -69,15 +83,15 @@ export class LogicalDevice {
         deviceInfo.ppEnabledExtensionNames = deviceExtensions.map(t => t.toString());
         deviceInfo.pEnabledFeatures = new VkPhysicalDeviceFeatures();
 
-        let result = vkCreateDevice(this.physicalDevice, deviceInfo, null, this.device);
+        let result = vkCreateDevice(this.physicalDevice.handle, deviceInfo, null, this.device);
         ASSERT_VK_RESULT(result);
 
         this.queue = new DeviceQueue(this.device);
-        
-        let validDepth = this.getSupportedDepthFormat(this.handlePhysicalDevice, this.depthFormat);
-        if(validDepth.result == false)
+
+        let validDepth = this.getSupportedDepthFormat(this.physicalDevice.handle, this.depthFormat);
+        if (validDepth.result == false)
             throw new Error("Cant find depth format.");
-            
+
         this.depthFormat = validDepth.depthFormat;
     }
 }

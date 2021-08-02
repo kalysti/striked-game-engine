@@ -3,7 +3,7 @@ import { Vector2D } from './Vector2D';
 import { Vector3D } from './Vector3D';
 import { Matrix4 } from './Mat4';
 import { VulkanBuffer } from '../vulkan/buffer';
-import { EngineObject } from '../resources/EngineObject';
+import { EngineObject } from '../resources/core/EngineObject';
 
 export class Transform extends EngineObject{
 

@@ -1,17 +1,18 @@
-import { ASSERT_VK_RESULT } from "../test.helpers";
+import { ASSERT_VK_RESULT } from "../utils/helpers";
 import { vkAcquireNextImageKHR, vkCreateSemaphore, VkDevice, VkPresentInfoKHR, vkQueuePresentKHR, vkQueueSubmit, vkQueueWaitIdle, VkSemaphore, VkSemaphoreCreateInfo, VkSubmitInfo, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VkSwapchainKHR } from 'vulkan-api';
 import { LogicalDevice } from './logical.device';
 import { CommandBuffer } from "./command.buffers";
+import { Swapchain } from './swapchain';
 
 export class Frame {
 
     private semaphoreImageAvailable: VkSemaphore = new VkSemaphore();
     private semaphoreRenderingAvailable: VkSemaphore = new VkSemaphore();
     private device: LogicalDevice;
-    private swapchain: VkSwapchainKHR;
+    private swapchain: Swapchain;
     private commandBuffers: CommandBuffer;
 
-    constructor(device: LogicalDevice, swapchain: VkSwapchainKHR, commandBuffers: CommandBuffer) {
+    constructor(device: LogicalDevice, swapchain: Swapchain, commandBuffers: CommandBuffer) {
         this.device = device;
         this.swapchain = swapchain;
         this.commandBuffers = commandBuffers;
@@ -26,7 +27,7 @@ export class Frame {
     draw() {
 
         let imageIndex = { $: 0 };
-        vkAcquireNextImageKHR(this.device.handle, this.swapchain, Number.MAX_SAFE_INTEGER, this.semaphoreImageAvailable, null, imageIndex);
+        vkAcquireNextImageKHR(this.device.handle, this.swapchain.handle, Number.MAX_SAFE_INTEGER, this.semaphoreImageAvailable, null, imageIndex);
 
         let waitStageMask = new Int32Array([
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
@@ -48,7 +49,7 @@ export class Frame {
         presentInfo.waitSemaphoreCount = 1;
         presentInfo.pWaitSemaphores = [this.semaphoreRenderingAvailable];
         presentInfo.swapchainCount = 1;
-        presentInfo.pSwapchains = [this.swapchain];
+        presentInfo.pSwapchains = [this.swapchain.handle];
         presentInfo.pImageIndices = new Uint32Array([imageIndex.$]);
         presentInfo.pResults = null;
 

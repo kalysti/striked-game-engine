@@ -1,6 +1,6 @@
-import { ASSERT_VK_RESULT, getMemoryTypeIndex, memoryCopy } from "../test.helpers";
-import { VkBufferCreateInfo, VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_SHARING_MODE_EXCLUSIVE, vkCreateBuffer, VkMemoryRequirements, vkGetBufferMemoryRequirements, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VkMemoryAllocateInfo, VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, vkAllocateMemory, vkBindBufferMemory, vkMapMemory, getArrayBufferFromAddress, vkUnmapMemory, VkDevice, VkBuffer, VkDeviceMemory, VkPhysicalDevice, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VkCommandBuffer, vkAllocateCommandBuffers, VkCommandBufferBeginInfo, vkEndCommandBuffer, vkCmdCopyBuffer, VkSubmitInfo, vkQueueSubmit, vkQueueWaitIdle, vkBeginCommandBuffer, VkBufferCopy, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, VkCommandBufferAllocateInfo, VK_COMMAND_BUFFER_LEVEL_PRIMARY, VkQueue, VkCommandPool } from 'vulkan-api';
+import { vkAllocateCommandBuffers, vkAllocateMemory, vkBeginCommandBuffer, vkBindBufferMemory, VkBuffer, VkBufferCopy, VkBufferCreateInfo, vkCmdCopyBuffer, VkCommandBuffer, VkCommandBufferAllocateInfo, VkCommandBufferBeginInfo, VkCommandPool, vkCreateBuffer, vkDestroyBuffer, VkDeviceMemory, vkEndCommandBuffer, vkFreeMemory, vkGetBufferMemoryRequirements, vkMapMemory, VkMemoryAllocateInfo, VkMemoryRequirements, VkPhysicalDevice, vkQueueSubmit, vkQueueWaitIdle, VkSubmitInfo, vkUnmapMemory, VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_COMMAND_BUFFER_LEVEL_PRIMARY, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, VK_SHARING_MODE_EXCLUSIVE } from 'vulkan-api';
 import { VkBufferUsageFlagBits, VkMemoryPropertyFlagBits } from 'vulkan-api/generated/1.2.162/win32';
+import { ASSERT_VK_RESULT, getMemoryTypeIndex, memoryCopy } from "../utils/helpers";
 import { LogicalDevice } from './logical.device';
 
 export class VulkanBuffer {
@@ -20,7 +20,16 @@ export class VulkanBuffer {
         return this.buffer;
     }
 
-    constructor(device: LogicalDevice,  size: number, usageFlags: VkBufferUsageFlagBits = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT) {
+    free() {
+        vkDestroyBuffer(this.device.handle, this.buffer, null);
+        vkFreeMemory(this.device.handle, this.memory, null);
+
+
+        vkDestroyBuffer(this.device.handle, this.stagingBuffer, null);
+        vkFreeMemory(this.device.handle, this.stagingBufferMemory, null);
+    }
+
+    constructor(device: LogicalDevice, size: number, usageFlags: VkBufferUsageFlagBits = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT) {
         this.device = device;
         this.physicalDevice = device.handlePhysicalDevice;
         this.usage = usageFlags;
@@ -31,7 +40,7 @@ export class VulkanBuffer {
         this.createBuffer(this.usage, this.buffer, this.memory, propertyFlags);
     }
 
-    updateValues(values: Float32Array|Uint8Array) {
+    updateValues(values: Float32Array | Uint8Array) {
         let dataPtr = { $: 0n };
 
         vkMapMemory(this.device.handle, this.memory, 0n, values.byteLength, 0, dataPtr);

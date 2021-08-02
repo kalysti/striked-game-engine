@@ -1,5 +1,5 @@
-import { Texture2D } from "../resources/Texture2D";
-import { EngineObject } from '../resources/EngineObject';
+import { Texture2D } from "../resources/2d/Texture2D";
+import { EngineObject } from '../resources/core/EngineObject';
 
 export class ResourceManager {
     static resources: Map<string, EngineObject> = new Map<string, EngineObject>();

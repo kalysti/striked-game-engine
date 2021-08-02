@@ -14,8 +14,7 @@ export class Vector3D {
         return 3;
     }
 
-    toString()
-    {
+    toString() {
         return "x: " + this.x + ", y:" + this.y + ", z:" + this.z;
     }
 
@@ -204,5 +203,32 @@ export class Vector3D {
 
     static get Down() {
         return new Vector3D(0, -1, 0);
+    }
+
+    dot(bV: Vector3D) : number{
+        let a: number[] = Object.assign([], this.values);
+        let b: number[] = Object.assign([], bV.values);
+
+        return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    }
+
+
+    rotate(k: Vector3D, theta: number) {
+        let cos_theta = Math.cos(theta);
+        let sin_theta = Math.sin(theta);
+
+        let a: number[] = Object.assign([], this.values);
+        let v = Vector3D.Zero;
+        v.values = a;
+
+        let rotated = v.mul(cos_theta);
+        let cross = k.cross(v).mul(sin_theta);
+        rotated = rotated.add(cross);
+
+        let val = k.mul(k.cross(v));
+        val = val.mul(1-cos_theta);
+        rotated = rotated.add(val);
+
+        return rotated;
     }
 }

@@ -1,18 +1,18 @@
 import fs from "fs";
 import essentials from "nvk-essentials";
-import { vkAllocateDescriptorSets, VkCompareOp, vkCreateDescriptorPool, vkCreateDescriptorSetLayout, vkCreateGraphicsPipelines, vkCreatePipelineLayout, VkDescriptorPool, VkDescriptorPoolCreateInfo, VkDescriptorSetAllocateInfo, VkDescriptorSetLayout, VkDescriptorSetLayoutBinding, VkDescriptorSetLayoutCreateInfo, VkDevice, VkExtent2D, VkGraphicsPipelineCreateInfo, VkOffset2D, VkPipeline, VkPipelineColorBlendAttachmentState, VkPipelineColorBlendStateCreateInfo, VkPipelineDynamicStateCreateInfo, VkPipelineInputAssemblyStateCreateInfo, VkPipelineLayout, VkPipelineLayoutCreateInfo, VkPipelineMultisampleStateCreateInfo, VkPipelineRasterizationStateCreateInfo, VkPipelineShaderStageCreateInfo, VkPipelineVertexInputStateCreateInfo, VkPipelineViewportStateCreateInfo, VkRect2D, VkShaderModule, VkShaderStageFlagBits, vkUpdateDescriptorSets, VkVertexInputAttributeDescription, VkVertexInputBindingDescription, VkViewport, VkWriteDescriptorSet, VK_COMPARE_OP_ALWAYS, VK_COMPARE_OP_GREATER_OR_EQUAL, VK_COMPARE_OP_LESS, VK_COMPARE_OP_LESS_OR_EQUAL, VK_CULL_MODE_BACK_BIT, VK_CULL_MODE_FRONT_BIT, VK_CULL_MODE_NONE, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_VIEWPORT, VK_FORMAT_R32G32B32_SFLOAT, VK_FORMAT_R32G32_SFLOAT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_LOGIC_OP_COPY, VK_LOGIC_OP_NO_OP, VK_POLYGON_MODE_FILL, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_SAMPLE_COUNT_1_BIT, VK_SHADER_STAGE_FRAGMENT_BIT, VK_SHADER_STAGE_VERTEX_BIT, VK_VERTEX_INPUT_RATE_VERTEX, VulkanWindow } from 'vulkan-api';
-import { VkCullModeFlagBits, VkFrontFace, VkLogicOp, VkPipelineDepthStencilStateCreateInfo, VkPolygonMode } from 'vulkan-api/generated/1.2.162/win32';
-import { Mesh } from "../resources/Mesh";
-import { ASSERT_VK_RESULT, calculateVertexDescriptorStride, createColorAttachment, createDescPoolSize, createDescriptionLayout, createShaderModule, createVertexDescriptor } from '../test.helpers';
-import { ResourceList } from './list';
+import { vkAllocateDescriptorSets, VkCompareOp, vkCreateDescriptorPool, vkCreateDescriptorSetLayout, vkCreateGraphicsPipelines, vkCreatePipelineLayout, VkDescriptorPool, VkDescriptorPoolCreateInfo, VkDescriptorSetAllocateInfo, VkDescriptorSetLayout, VkDescriptorSetLayoutBinding, VkDescriptorSetLayoutCreateInfo, VkExtent2D, VkGraphicsPipelineCreateInfo, VkOffset2D, VkPipeline, VkPipelineColorBlendAttachmentState, VkPipelineColorBlendStateCreateInfo, VkPipelineDynamicStateCreateInfo, VkPipelineInputAssemblyStateCreateInfo, VkPipelineLayout, VkPipelineLayoutCreateInfo, VkPipelineMultisampleStateCreateInfo, VkPipelineRasterizationStateCreateInfo, VkPipelineShaderStageCreateInfo, VkPipelineVertexInputStateCreateInfo, VkPipelineViewportStateCreateInfo, VkRect2D, VkShaderModule, VkShaderStageFlagBits, vkUpdateDescriptorSets, VkVertexInputAttributeDescription, VkVertexInputBindingDescription, VkViewport, VkWriteDescriptorSet, VK_COMPARE_OP_ALWAYS, VK_COMPARE_OP_GREATER_OR_EQUAL, VK_COMPARE_OP_LESS_OR_EQUAL, VK_CULL_MODE_BACK_BIT, VK_CULL_MODE_FRONT_BIT, VK_CULL_MODE_NONE, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_VIEWPORT, VK_FORMAT_R32G32B32_SFLOAT, VK_FORMAT_R32G32_SFLOAT, VK_FRONT_FACE_CLOCKWISE, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_LOGIC_OP_COPY, VK_LOGIC_OP_NO_OP, VK_POLYGON_MODE_FILL, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, VK_SAMPLE_COUNT_1_BIT, VK_SHADER_STAGE_FRAGMENT_BIT, VK_SHADER_STAGE_VERTEX_BIT, VK_VERTEX_INPUT_RATE_VERTEX, VulkanWindow } from 'vulkan-api';
+import { VkCullModeFlagBits, VkFrontFace, VkLogicOp, VkPipelineDepthStencilStateCreateInfo, VkPolygonMode, VkPrimitiveTopology } from 'vulkan-api/generated/1.2.162/win32';
+import { Geometry } from '../resources/core/Geometry';
+import { ASSERT_VK_RESULT, calculateVertexDescriptorStride, createColorAttachment, createDescPoolSize, createDescriptionLayout, createShaderModule, createVertexDescriptor } from '../utils/helpers';
+import { ResourceList } from '../utils/list';
+import { LogicalDevice } from "./logical.device";
+import { RenderElement } from "./render.element";
 import { RenderPass } from './renderpass';
-import { Geometry } from '../resources/Geometry';
 const { GLSL } = essentials;
 
-export class Pipeline {
+export class Pipeline extends RenderElement {
 
     private window: VulkanWindow;
-    private device: VkDevice;
     private renderPass: RenderPass;
     //private pipelines: Map<string, VkPipeline> = new Map<string, VkPipeline>();
 
@@ -29,27 +29,43 @@ export class Pipeline {
     private depthStencil: ResourceList<VkPipelineDepthStencilStateCreateInfo> = new ResourceList<VkPipelineDepthStencilStateCreateInfo>();
 
 
-    constructor(device: VkDevice, window: VulkanWindow, renderPass: RenderPass) {
-        this.device = device;
+    constructor(device: LogicalDevice, window: VulkanWindow, renderPass: RenderPass) {
+        super(device);
         this.window = window;
         this.renderPass = renderPass;
 
-        this.setup();
+        this.create();
+    }
+
+    protected onDestroy() {
+
     }
 
     //at first create desc layout
-    setup() {
+
+    protected onCreate() {
 
 
         this.createDepthStencil('mesh', false, false, VK_COMPARE_OP_LESS_OR_EQUAL, false, false, 0, 0);
+        this.createDepthStencil('prosky', true, true, VK_COMPARE_OP_LESS_OR_EQUAL, false, false, 0, 1.0);
         this.createDepthStencil('sky', true, true, VK_COMPARE_OP_LESS_OR_EQUAL, false, false, 0, 1.0);
+        this.createDepthStencil('ui', true, true, VK_COMPARE_OP_LESS_OR_EQUAL, false, false, 0, 1.0);
         this.createDepthStencil('grid', false, false, VK_COMPARE_OP_GREATER_OR_EQUAL, false, false, 0, 0.0);
+        this.createDepthStencil('primitive', false, false, VK_COMPARE_OP_GREATER_OR_EQUAL, false, false, 0, 0.0);
+
 
         this.createDescLayout('mesh',
             [
                 createDescriptionLayout(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT),
                 createDescriptionLayout(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT),
                 createDescriptionLayout(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+            ]);
+
+        this.createDescLayout('prosky',
+            [
+                createDescriptionLayout(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT),
+                createDescriptionLayout(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT),
+                createDescriptionLayout(2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT),
             ]);
 
         this.createDescLayout('grid',
@@ -59,7 +75,14 @@ export class Pipeline {
                 createDescriptionLayout(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT),
 
             ]);
+        this.createDescLayout('primitive',
+            [
 
+                createDescriptionLayout(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT),
+                createDescriptionLayout(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT),
+                createDescriptionLayout(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+
+            ]);
         this.createDescLayout('sky',
             [
                 createDescriptionLayout(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT),
@@ -69,14 +92,24 @@ export class Pipeline {
 
             ]);
 
+        this.createDescLayout('ui',
+            [
+                createDescriptionLayout(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT),
+                createDescriptionLayout(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+
+            ]);
+
         this.createPipeLineLayout('mesh');
+        this.createPipeLineLayout('prosky');
         this.createPipeLineLayout('grid');
         this.createPipeLineLayout('sky');
+        this.createPipeLineLayout('ui');
+        this.createPipeLineLayout('primitive');
 
         this.pipelineShaders.add('mesh',
             [
-                this.createShader('./shaders/triangle.vert', 'vert'),
-                this.createShader('./shaders/triangle.frag', 'frag')
+                this.createShader('./shaders/mesh.vert', 'vert'),
+                this.createShader('./shaders/mesh.frag', 'frag')
             ]);
 
         this.pipelineShaders.add('sky',
@@ -85,31 +118,66 @@ export class Pipeline {
                 this.createShader('./shaders/sky.frag', 'frag')
             ]);
 
+        this.pipelineShaders.add('ui',
+            [
+                this.createShader('./shaders/ui.vert', 'vert'),
+                this.createShader('./shaders/ui.frag', 'frag')
+            ]);
+
+        this.pipelineShaders.add('prosky',
+            [
+                this.createShader('./shaders/prosky.vert', 'vert'),
+                this.createShader('./shaders/prosky.frag', 'frag')
+            ]);
+
 
         this.pipelineShaders.add('grid',
             [
                 this.createShader('./shaders/grid.vert', 'vert'),
                 this.createShader('./shaders/grid.frag', 'frag')
             ]);
+        this.pipelineShaders.add('primitive',
+            [
+                this.createShader('./shaders/primitive.vert', 'vert'),
+                this.createShader('./shaders/primitive.frag', 'frag')
+            ]);
 
         this.createRasterizeInfo('mesh', VK_CULL_MODE_BACK_BIT);
+        this.createRasterizeInfo('primitive', VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE);
+        this.createRasterizeInfo('prosky', VK_CULL_MODE_FRONT_BIT);
+
+        this.createRasterizeInfo('ui', VK_CULL_MODE_NONE);
         this.createRasterizeInfo('sky', VK_CULL_MODE_FRONT_BIT);
         this.createRasterizeInfo('grid', VK_CULL_MODE_NONE);
 
         this.vertexDescriptions.add('mesh',
             [
-                createVertexDescriptor(0, 0, VK_FORMAT_R32G32B32_SFLOAT),
-                createVertexDescriptor(1, 3 * 4, VK_FORMAT_R32G32B32_SFLOAT),
-                createVertexDescriptor(2, 6 * 4, VK_FORMAT_R32G32_SFLOAT)
+                createVertexDescriptor(0, 0, VK_FORMAT_R32G32B32_SFLOAT), //vertex
+                createVertexDescriptor(1, 3 * 4, VK_FORMAT_R32G32B32_SFLOAT), //normal
+                createVertexDescriptor(2, 6 * 4, VK_FORMAT_R32G32_SFLOAT) //uv
+            ]);
+
+
+        this.vertexDescriptions.add('primitive',
+            [
+                createVertexDescriptor(0, 0, VK_FORMAT_R32G32_SFLOAT),
+                createVertexDescriptor(1, 2 * 4, VK_FORMAT_R32G32_SFLOAT) //uv
+
+            ]);
+
+        this.vertexDescriptions.add('prosky',
+            [
+                createVertexDescriptor(0, 0, VK_FORMAT_R32G32B32_SFLOAT)
             ]);
 
         this.vertexDescriptions.add('sky',
             [
-                createVertexDescriptor(0, 0, VK_FORMAT_R32G32B32_SFLOAT),
-                createVertexDescriptor(1, 3 * 4, VK_FORMAT_R32G32B32_SFLOAT),
-                createVertexDescriptor(2, 6 * 4, VK_FORMAT_R32G32_SFLOAT)
+                createVertexDescriptor(0, 0, VK_FORMAT_R32G32B32_SFLOAT)
             ]);
 
+        this.vertexDescriptions.add('ui',
+            [
+            ]);
         this.vertexDescriptions.add('grid',
             [
 
@@ -118,7 +186,9 @@ export class Pipeline {
         this.createColorBlend('mesh', VK_LOGIC_OP_NO_OP, [
             createColorAttachment()]
         );
-
+        this.createColorBlend('primitive', VK_LOGIC_OP_NO_OP, [
+            createColorAttachment(true)]
+        );
         this.createColorBlend('grid', VK_LOGIC_OP_NO_OP, [
             createColorAttachment(true)]
         );
@@ -127,9 +197,20 @@ export class Pipeline {
             createColorAttachment(true)]
         );
 
+        this.createColorBlend('ui', VK_LOGIC_OP_COPY, [
+            createColorAttachment(true)]
+        );
+
+        this.createColorBlend('prosky', VK_LOGIC_OP_COPY, [
+            createColorAttachment(true)]
+        );
+
         this.createPipeline('mesh');
         this.createPipeline('grid');
         this.createPipeline('sky');
+        this.createPipeline('ui');
+        this.createPipeline('prosky');
+        this.createPipeline('primitive', VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
 
     }
 
@@ -153,7 +234,7 @@ export class Pipeline {
 
     updateDescriptions(pipeName: string, mesh: Geometry, setList: VkWriteDescriptorSet[]) {
 
-        console.log("start generate mesh for pipe " + pipeName);
+        console.log("Update uniforms for " + pipeName);
 
         let pool = this.pipelinePools.get(pipeName);
         let descLayout = this.descLayouts.get(pipeName);
@@ -163,7 +244,7 @@ export class Pipeline {
         descriptorSetAllocInfo.descriptorPool = pool;
         descriptorSetAllocInfo.pSetLayouts = [descLayout];
 
-        let result = vkAllocateDescriptorSets(this.device, descriptorSetAllocInfo, [mesh.descriptorSet]);
+        let result = vkAllocateDescriptorSets(this.device.handle, descriptorSetAllocInfo, [mesh.descriptorSet]);
         ASSERT_VK_RESULT(result);
 
         let bindings = this.layoutBindings.get(pipeName);
@@ -185,16 +266,16 @@ export class Pipeline {
         }
 
         let setVlaues = [...setList.values()];
-        vkUpdateDescriptorSets(this.device, setVlaues.length, setVlaues, 0, null);
+        vkUpdateDescriptorSets(this.device.handle, setVlaues.length, setVlaues, 0, null);
     };
 
-    private createPipeline(name: string) {
+    private createPipeline(name: string, primType: VkPrimitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST ) {
         let pipelineLayout = this.pipelineLayouts.get(name);
         let shaderStages = this.pipelineShaders.get(name);
         let rasterRizeInfo = this.rasterizeInfos.get(name);
         let vertexDesciptors = this.vertexDescriptions.get(name);
         let colorBlend = this.colorBlends.get(name);
-        let depthStencil = this.depthStencil.get(name);
+        let depthStencil = this.depthStencil.getOrNull(name);
 
         let dynamicStates = new Int32Array([
             VK_DYNAMIC_STATE_VIEWPORT,
@@ -230,7 +311,7 @@ export class Pipeline {
         multisampleInfo.sampleShadingEnable = false;
 
         let inputAssemblyStateInfo = new VkPipelineInputAssemblyStateCreateInfo();
-        inputAssemblyStateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        inputAssemblyStateInfo.topology = primType;
         inputAssemblyStateInfo.primitiveRestartEnable = false;
 
         let graphicsPipelineInfo = new VkGraphicsPipelineCreateInfo();
@@ -250,7 +331,7 @@ export class Pipeline {
         graphicsPipelineInfo.basePipelineIndex = -1;
 
         let pipe = new VkPipeline();
-        let result = vkCreateGraphicsPipelines(this.device, null, 1, [graphicsPipelineInfo], null, [pipe]);
+        let result = vkCreateGraphicsPipelines(this.device.handle, null, 1, [graphicsPipelineInfo], null, [pipe]);
         ASSERT_VK_RESULT(result);
 
         this.pipelineList.add(name, pipe);
@@ -264,7 +345,7 @@ export class Pipeline {
 
     private createShader(filename: string, ext: string) {
 
-        console.log("Load shader: " + filename);
+        console.log("[Shader][" + filename + "] Loaded");
         let shaderFlag: VkShaderStageFlagBits;
         switch (ext) {
             case "vert":
@@ -277,7 +358,7 @@ export class Pipeline {
             default: throw new Error("Cant find module");
         }
 
-        let shaderModule = createShaderModule(this.device, this.loadShader(filename, ext), new VkShaderModule());
+        let shaderModule = createShaderModule(this.device.handle, this.loadShader(filename, ext), new VkShaderModule());
 
         let shaderStageInfoVert = new VkPipelineShaderStageCreateInfo();
         shaderStageInfoVert.stage = shaderFlag;
@@ -294,7 +375,7 @@ export class Pipeline {
         layoutInfo.pBindings = bindings;
 
         let layout = new VkDescriptorSetLayout();
-        let result = vkCreateDescriptorSetLayout(this.device, layoutInfo, null, layout);
+        let result = vkCreateDescriptorSetLayout(this.device.handle, layoutInfo, null, layout);
         ASSERT_VK_RESULT(result);
 
         this.descLayouts.add(name, layout);
@@ -309,7 +390,7 @@ export class Pipeline {
         descriptorPoolInfo.maxSets = 64;
 
         let pool = new VkDescriptorPool();
-        result = vkCreateDescriptorPool(this.device, descriptorPoolInfo, null, pool);
+        result = vkCreateDescriptorPool(this.device.handle, descriptorPoolInfo, null, pool);
         ASSERT_VK_RESULT(result);
 
         this.pipelinePools.add(name, pool);
@@ -332,15 +413,15 @@ export class Pipeline {
     }
 
     private createPipeLineLayout(name: string) {
-        let layout = this.descLayouts.get(name);
+        let layout = this.descLayouts.getOrNull(name);
 
         let pipelineLayout = new VkPipelineLayout();
         let pipelineLayoutInfo = new VkPipelineLayoutCreateInfo();
-        pipelineLayoutInfo.setLayoutCount = 1;
+        pipelineLayoutInfo.setLayoutCount = (layout != null) ? 1 : 0;
         pipelineLayoutInfo.pushConstantRangeCount = 0;
-        pipelineLayoutInfo.pSetLayouts = [layout];
+        pipelineLayoutInfo.pSetLayouts = (layout != null) ? [layout] : null;
 
-        let result = vkCreatePipelineLayout(this.device, pipelineLayoutInfo, null, pipelineLayout);
+        let result = vkCreatePipelineLayout(this.device.handle, pipelineLayoutInfo, null, pipelineLayout);
         ASSERT_VK_RESULT(result);
 
         this.pipelineLayouts.add(name, pipelineLayout);

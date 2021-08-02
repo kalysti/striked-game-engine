@@ -1,11 +1,8 @@
-import { SceneNode } from './Node';
-import { Mesh } from './Mesh';
-import { Matrix4 } from '../math/Mat4';
 import { VkCommandPool, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT } from 'vulkan-api';
-import { LogicalDevice } from '../vulkan/logical.device';
+import { Matrix4 } from '../math/Mat4';
 import { VulkanBuffer } from '../vulkan/buffer';
-import { Renderer } from '../test';
-import { CubeMesh } from './CubeMesh';
+import { LogicalDevice } from '../vulkan/logical.device';
+import { CubeMesh } from './3d/CubeMesh';
 export class Sky extends CubeMesh {
 
     mView: Matrix4 = Matrix4.Identity;

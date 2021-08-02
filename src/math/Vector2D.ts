@@ -7,7 +7,7 @@ export class Vector2D {
         this.y = y;
     }
 
-    getArray(): number[] {
+    get values(): number[] {
         return [this.x, this.y];
     }
 

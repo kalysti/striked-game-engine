@@ -2,7 +2,7 @@ import { MathCommon } from "../math/Common";
 import { Vector3D } from "../math/Vector3D";
 import { Matrix4 } from '../math/Mat4';
 import { Vector2D } from "../math/Vector2D";
-import { SceneNode } from '../resources/Node';
+import { SceneNode } from '../resources/core/Node';
 
 export enum CameraType { lookat = 0, firstperson = 1 };
 

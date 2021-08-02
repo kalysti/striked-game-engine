@@ -1,6 +1,7 @@
-import { ASSERT_VK_RESULT } from '../test.helpers';
 import { vkEnumeratePhysicalDevices, vkGetPhysicalDeviceFeatures, vkGetPhysicalDeviceMemoryProperties, vkGetPhysicalDeviceProperties, vkGetPhysicalDeviceQueueFamilyProperties, vkGetPhysicalDeviceSurfaceCapabilitiesKHR, vkGetPhysicalDeviceSurfaceFormatsKHR, vkGetPhysicalDeviceSurfacePresentModesKHR, vkGetPhysicalDeviceSurfaceSupportKHR, VkInstance, VkPhysicalDevice, VkPhysicalDeviceFeatures, VkPhysicalDeviceMemoryProperties, VkPhysicalDeviceProperties, VkQueueFamilyProperties, VkSurfaceCapabilitiesKHR, VkSurfaceFormatKHR, VkSurfaceKHR } from 'vulkan-api';
-export class PhysicalDevice {
+import { ASSERT_VK_RESULT } from '../utils/helpers';
+import { RenderBackplane } from './render.backplane';
+export class PhysicalDevice  extends RenderBackplane{
     private physicalDevice: VkPhysicalDevice = new VkPhysicalDevice();
     private instance: VkInstance = new VkInstance();
     private surface: VkSurfaceKHR = new VkSurfaceKHR();
@@ -9,9 +10,7 @@ export class PhysicalDevice {
         return this.physicalDevice;
     }
 
-    constructor(instance: VkInstance, surface: VkSurfaceKHR) {
-        this.instance = instance;
-        this.surface = surface;
+    protected onCreate(){
 
         let devices = this.getDevices();
         this.physicalDevice = devices[0];
@@ -31,8 +30,7 @@ export class PhysicalDevice {
         let queueFamilies = [...Array(queueFamilyCount.$)].map(() => new VkQueueFamilyProperties());
         vkGetPhysicalDeviceQueueFamilyProperties(this.physicalDevice, queueFamilyCount, queueFamilies);
 
-        let surfaceCapabilities = new VkSurfaceCapabilitiesKHR();
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(this.physicalDevice, this.surface, surfaceCapabilities);
+        this.getSurfaceCaps();
 
         let surfaceFormatCount = { $: 0 };
         vkGetPhysicalDeviceSurfaceFormatsKHR(this.physicalDevice, this.surface, surfaceFormatCount, null);
@@ -49,8 +47,24 @@ export class PhysicalDevice {
         let surfaceSupport = { $: false };
         vkGetPhysicalDeviceSurfaceSupportKHR(this.physicalDevice, 0, this.surface, surfaceSupport);
         if (!surfaceSupport) throw new Error(`No surface creation support!`);
+    }
 
-        console.log(`Using device: ${deviceProperties.deviceName}`);
+    protected onDestroy(){
+    }
+
+    constructor(instance: VkInstance, surface: VkSurfaceKHR) {
+        super();
+
+        this.instance = instance;
+        this.surface = surface;
+
+        this.create();
+    }
+
+    getSurfaceCaps()
+    {
+        let surfaceCapabilities = new VkSurfaceCapabilitiesKHR();
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(this.physicalDevice, this.surface, surfaceCapabilities);
     }
 
     private getDevices(): VkPhysicalDevice[] {

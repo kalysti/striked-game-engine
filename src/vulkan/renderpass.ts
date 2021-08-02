@@ -1,8 +1,9 @@
-import { ASSERT_VK_RESULT } from '../test.helpers';
-import { VkAttachmentDescription, VkAttachmentReference, vkCreateRenderPass, VkDevice, VkFormat, VkFormatProperties, vkGetPhysicalDeviceFormatProperties, VkPhysicalDevice, VkRenderPass, VkRenderPassCreateInfo, VkSubpassDependency, VkSubpassDescription, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_STORE, VK_DEPENDENCY_BY_REGION_BIT, VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_D16_UNORM, VK_FORMAT_D16_UNORM_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_UNDEFINED, VK_PIPELINE_BIND_POINT_GRAPHICS, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_SAMPLE_COUNT_1_BIT, VK_SUBPASS_EXTERNAL } from 'vulkan-api';
+import { VkAttachmentDescription, VkAttachmentReference, vkCreateRenderPass, vkDestroyRenderPass, VkRenderPass, VkRenderPassCreateInfo, VkSubpassDependency, VkSubpassDescription, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_STORE, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_UNDEFINED, VK_PIPELINE_BIND_POINT_GRAPHICS, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_SAMPLE_COUNT_1_BIT, VK_SUBPASS_EXTERNAL } from 'vulkan-api';
+import { ASSERT_VK_RESULT } from '../utils/helpers';
 import { LogicalDevice } from './logical.device';
+import { RenderElement } from './render.element';
 
-export class RenderPass {
+export class RenderPass extends RenderElement {
 
     private renderPass: VkRenderPass = new VkRenderPass();
 
@@ -10,11 +11,15 @@ export class RenderPass {
         return this.renderPass;
     }
 
-
-    private _device: LogicalDevice;
     constructor(device: LogicalDevice) {
 
-        this._device = device;
+        super(device); 
+        this.create();
+
+    }
+
+    protected onCreate() {
+        this.renderPass = new VkRenderPass();
         let attachments = this.getAttachmentDesc();
 
         let renderPassInfo = new VkRenderPassCreateInfo();
@@ -28,8 +33,12 @@ export class RenderPass {
         renderPassInfo.dependencyCount = deps.length;
         renderPassInfo.pDependencies = deps;
 
-        let result = vkCreateRenderPass(device.handle, renderPassInfo, null, this.renderPass);
+        let result = vkCreateRenderPass(this.device.handle, renderPassInfo, null, this.renderPass);
         ASSERT_VK_RESULT(result);
+    }
+
+    protected onDestroy() {
+        vkDestroyRenderPass(this.device.handle, this.renderPass, null);
     }
 
     getAttachmentDesc(): VkAttachmentDescription[] {
@@ -45,8 +54,8 @@ export class RenderPass {
         colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
         let depthAttachment = new VkAttachmentDescription();
-            depthAttachment.flags = 0;
-        depthAttachment.format = this._device.depthFormat;
+        depthAttachment.flags = 0;
+        depthAttachment.format = this.device.depthFormat;
         depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
         depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;

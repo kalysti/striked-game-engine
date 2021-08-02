@@ -1,4 +1,4 @@
-import { Texture2D } from "../resources/Texture2D";
+import { Texture2D } from "../resources/2d/Texture2D";
 import { VulkanBuffer } from "./buffer";
 
 export class BufferManager {

@@ -1,8 +1,8 @@
 import { MathCommon } from '../math/Common';
 import { Vector2D } from '../math/Vector2D';
 import { Vector3D } from '../math/Vector3D';
-import { EngineInputEvent, EngineInputKeyEvent, EngineInputKeyEventType, EngineInputMouseEvent, EngineInputMouseMotionEvent, EngineMouseButton } from '../resources/Node';
-import { Renderer } from '../test';
+import { EngineInputEvent, EngineInputKeyEvent, EngineInputKeyEventType, EngineInputMouseEvent, EngineInputMouseMotionEvent, EngineMouseButton } from '../resources/core/Node';
+import { Renderer } from '../renderer';
 import { Camera, CameraType } from './camera';
 
 export class InputStruct {
