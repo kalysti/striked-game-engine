@@ -33,8 +33,8 @@ export class Scene {
         this.addChild(sky);
 
         let buttpon = new UIYContainer();
-        buttpon.addChild(new UIBUtton());
-        this.addChild(buttpon);
+       // buttpon.addChild(new UIBUtton());
+      //  this.addChild(buttpon);
 
 
         // this.nodes.push(new EditorGrid());
