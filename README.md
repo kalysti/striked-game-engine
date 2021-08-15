@@ -1,5 +1,5 @@
 
-# GTML Engine
+# Striked Engine
 
 A hackable cross-plattform game engine based on Typescript and HTML to make things easier. Uses Vulkan as a graphics backend.
 
