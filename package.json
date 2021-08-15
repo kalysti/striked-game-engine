@@ -2,7 +2,6 @@
   "name": "striked-engine",
   "version": "0.0.1",
   "scripts": {
-    
     "start": "nodemon --config nodemon.json ./src/start.js",
     "build": "tsc --build tsconfig.release.json"
   },
@@ -38,7 +37,7 @@
     "save": "^2.4.0",
     "uint": "^21.6.2",
     "uuid": "^8.3.2",
-    "vulkan-api": "^0.9.3",
+    "vulkan-api": "^0.9.4",
     "xml2js": "^0.4.23"
   },
   "devDependencies": {
