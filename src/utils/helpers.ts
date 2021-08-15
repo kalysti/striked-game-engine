@@ -1,7 +1,6 @@
-import { memoryWrite, VkBlendFactor, VkBlendOp, vkCreateShaderModule, VkDescriptorBufferInfo, VkDescriptorImageInfo, VkDescriptorPoolSize, VkDescriptorSetLayoutBinding, VkDescriptorType, VkDevice, VkFormat, vkGetPhysicalDeviceMemoryProperties, VkPhysicalDeviceMemoryProperties, VkPipelineColorBlendAttachmentState, VkShaderModuleCreateInfo, VkShaderStageFlagBits, VkVertexInputAttributeDescription, VkWriteDescriptorSet, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD, VK_COLOR_COMPONENT_A_BIT, VK_COLOR_COMPONENT_B_BIT, VK_COLOR_COMPONENT_G_BIT, VK_COLOR_COMPONENT_R_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_FORMAT_R32G32B32_SFLOAT, VK_FORMAT_R32G32_SFLOAT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_SUCCESS } from 'vulkan-api';
-import { VkColorComponentFlagBits } from 'vulkan-api/generated/1.2.162/win32';
-import { Texture2D } from '../resources/2d/Texture2D';
+import { memoryWrite, VkBlendFactor, VkBlendOp, VkColorComponentFlagBits, vkCreateShaderModule, VkDescriptorBufferInfo, VkDescriptorImageInfo, VkDescriptorPoolSize, VkDescriptorSetLayoutBinding, VkDescriptorType, VkDevice, VkFormat, vkGetPhysicalDeviceMemoryProperties, VkPhysicalDevice, VkPhysicalDeviceMemoryProperties, VkPipelineColorBlendAttachmentState, VkShaderModuleCreateInfo, VkShaderStageFlagBits, VkVertexInputAttributeDescription, VkWriteDescriptorSet, VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ZERO, VK_BLEND_OP_ADD, VK_COLOR_COMPONENT_A_BIT, VK_COLOR_COMPONENT_B_BIT, VK_COLOR_COMPONENT_G_BIT, VK_COLOR_COMPONENT_R_BIT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_FORMAT_R32G32B32A32_SFLOAT, VK_FORMAT_R32G32B32_SFLOAT, VK_FORMAT_R32G32_SFLOAT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_SUCCESS } from 'vulkan-api';
 import { VulkanBuffer } from '../vulkan/buffer';
+import { VulkanTextureBuffer } from '../vulkan/texture.buffer';
 
 export function ASSERT_VK_RESULT(result) {
   if (result !== VK_SUCCESS) throw new Error(`Vulkan assertion failed!`);
@@ -31,7 +30,7 @@ export function createDescSet(vb: VulkanBuffer, binding: number = 0, type: VkDes
   let bufferInfo = new VkDescriptorBufferInfo();
   bufferInfo.buffer = vb.buffer;
   bufferInfo.offset = 0n;
-  bufferInfo.range = vb.size;
+  bufferInfo.range = vb.currentBufferSize;
 
   let writeDescriptorSet = new VkWriteDescriptorSet();
   writeDescriptorSet.dstArrayElement = 0;
@@ -42,7 +41,7 @@ export function createDescSet(vb: VulkanBuffer, binding: number = 0, type: VkDes
   return writeDescriptorSet;
 }
 
-export function createDescImageInfo(texture: Texture2D, binding: number = 0, type: VkDescriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER): VkWriteDescriptorSet {
+export function createDescImageInfo(texture: VulkanTextureBuffer, binding: number = 0, type: VkDescriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER): VkWriteDescriptorSet {
 
   let descriptorImageInfo = new VkDescriptorImageInfo();
   descriptorImageInfo.sampler = texture.sampler;
@@ -63,6 +62,8 @@ export function calculateVertexDescriptorStride(attributes: VkVertexInputAttribu
   for (let attr of attributes) {
     if (attr.format == VK_FORMAT_R32G32B32_SFLOAT)
       stride += 3 * 4;
+    else if (attr.format == VK_FORMAT_R32G32B32A32_SFLOAT)
+        stride += 4 * 4;
     else if (attr.format == VK_FORMAT_R32G32_SFLOAT)
       stride += 2 * 4;
     else
@@ -98,11 +99,11 @@ export function createColorAttachment(
 
   return colorBlendAttachment;
 }
-export function createVertexDescriptor(location: number = 0, offset: number = 0, format: VkFormat = VK_FORMAT_R32G32B32_SFLOAT): VkVertexInputAttributeDescription {
+export function createVertexDescriptor(location: number = 0, offset: number = 0, format: VkFormat = VK_FORMAT_R32G32B32_SFLOAT, binding: number = 0): VkVertexInputAttributeDescription {
 
   let posVertexAttrDescr = new VkVertexInputAttributeDescription();
   posVertexAttrDescr.location = location;
-  posVertexAttrDescr.binding = 0;
+  posVertexAttrDescr.binding = binding;
   posVertexAttrDescr.format = format;
   posVertexAttrDescr.offset = offset;
 
@@ -119,7 +120,7 @@ export function createShaderModule(device: VkDevice, shaderSrc, shaderModule) {
   return shaderModule;
 };
 
-export function getMemoryTypeIndex(typeFilter, propertyFlag, physicalDevice) {
+export function getMemoryTypeIndex(typeFilter, propertyFlag, physicalDevice: VkPhysicalDevice) {
   let memoryProperties = new VkPhysicalDeviceMemoryProperties();
   vkGetPhysicalDeviceMemoryProperties(physicalDevice, memoryProperties);
   for (let ii = 0; ii < memoryProperties.memoryTypeCount; ++ii) {

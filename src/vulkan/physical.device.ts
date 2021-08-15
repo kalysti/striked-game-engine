@@ -18,6 +18,7 @@ export class PhysicalDevice  extends RenderBackplane{
         let deviceFeatures = new VkPhysicalDeviceFeatures();
         vkGetPhysicalDeviceFeatures(this.physicalDevice, deviceFeatures);
 
+
         let deviceProperties = new VkPhysicalDeviceProperties();
         vkGetPhysicalDeviceProperties(this.physicalDevice, deviceProperties);
 

@@ -1,13 +1,18 @@
-import { Vector3D } from "../../math/Vector3D";
-import { Vector2D } from '../../math/Vector2D';
+import { EntityObject } from '@engine/resources';
+import { Vector2D, Vector3D } from '@engine/types';
 
-export class MeshData3D {
+export class MeshData3D extends EntityObject{
 
     indicies: number[] = [];
     vertices: Vector3D[] = [];
     normals: Vector3D[] = [];
     uvs: Vector2D[][] = [[], []];
     colors: Vector3D[] = [];
+    
+    toDataStream(): Uint8Array
+    {
+        return new Uint8Array(0);
+    }
 
     /**
      * Gets indicies byte array

@@ -1,10 +1,9 @@
-import { v4 as uuidv4 } from 'uuid';
+import { ObjectId } from "@engine/types";
 
 export abstract class EngineObject {
+    private _id = new ObjectId();
 
-    private _uid = uuidv4();
-
-    get id() {
-        return this._uid;
+    get id(): ObjectId {
+        return this._id;
     }
 }

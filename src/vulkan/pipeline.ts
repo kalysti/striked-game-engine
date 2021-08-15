@@ -1,223 +1,173 @@
-import fs from "fs";
-import essentials from "nvk-essentials";
-import { vkAllocateDescriptorSets, VkCompareOp, vkCreateDescriptorPool, vkCreateDescriptorSetLayout, vkCreateGraphicsPipelines, vkCreatePipelineLayout, VkDescriptorPool, VkDescriptorPoolCreateInfo, VkDescriptorSetAllocateInfo, VkDescriptorSetLayout, VkDescriptorSetLayoutBinding, VkDescriptorSetLayoutCreateInfo, VkExtent2D, VkGraphicsPipelineCreateInfo, VkOffset2D, VkPipeline, VkPipelineColorBlendAttachmentState, VkPipelineColorBlendStateCreateInfo, VkPipelineDynamicStateCreateInfo, VkPipelineInputAssemblyStateCreateInfo, VkPipelineLayout, VkPipelineLayoutCreateInfo, VkPipelineMultisampleStateCreateInfo, VkPipelineRasterizationStateCreateInfo, VkPipelineShaderStageCreateInfo, VkPipelineVertexInputStateCreateInfo, VkPipelineViewportStateCreateInfo, VkRect2D, VkShaderModule, VkShaderStageFlagBits, vkUpdateDescriptorSets, VkVertexInputAttributeDescription, VkVertexInputBindingDescription, VkViewport, VkWriteDescriptorSet, VK_COMPARE_OP_ALWAYS, VK_COMPARE_OP_GREATER_OR_EQUAL, VK_COMPARE_OP_LESS_OR_EQUAL, VK_CULL_MODE_BACK_BIT, VK_CULL_MODE_FRONT_BIT, VK_CULL_MODE_NONE, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_VIEWPORT, VK_FORMAT_R32G32B32_SFLOAT, VK_FORMAT_R32G32_SFLOAT, VK_FRONT_FACE_CLOCKWISE, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_LOGIC_OP_COPY, VK_LOGIC_OP_NO_OP, VK_POLYGON_MODE_FILL, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, VK_SAMPLE_COUNT_1_BIT, VK_SHADER_STAGE_FRAGMENT_BIT, VK_SHADER_STAGE_VERTEX_BIT, VK_VERTEX_INPUT_RATE_VERTEX, VulkanWindow } from 'vulkan-api';
-import { VkCullModeFlagBits, VkFrontFace, VkLogicOp, VkPipelineDepthStencilStateCreateInfo, VkPolygonMode, VkPrimitiveTopology } from 'vulkan-api/generated/1.2.162/win32';
-import { Geometry } from '../resources/core/Geometry';
+import { GraphicsModule } from '@engine/modules';
+import { RenderableNode } from '@engine/nodes';
+import { RenderTopology } from '@engine/nodes/renderable';
+import { List } from '@engine/types';
+import fs from 'fs';
+import essentials from 'nvk-essentials';
+import {
+    vkAllocateDescriptorSets, VkCompareOp,
+    vkCreateDescriptorPool,
+    vkCreateDescriptorSetLayout,
+    vkCreateGraphicsPipelines,
+    vkCreatePipelineLayout, VkCullModeFlagBits, VkDescriptorPool,
+    VkDescriptorPoolCreateInfo,
+    VkDescriptorSetAllocateInfo,
+    VkDescriptorSetLayout,
+    VkDescriptorSetLayoutBinding,
+    VkDescriptorSetLayoutCreateInfo, VkExtent2D,
+    VkFrontFace,
+    VkGraphicsPipelineCreateInfo,
+    VkLogicOp,
+    VkOffset2D,
+    VkPipeline,
+    VkPipelineColorBlendAttachmentState,
+    VkPipelineColorBlendStateCreateInfo,
+    VkPipelineDepthStencilStateCreateInfo,
+    VkPipelineDynamicStateCreateInfo,
+    VkPipelineInputAssemblyStateCreateInfo,
+    VkPipelineLayout,
+    VkPipelineLayoutCreateInfo,
+    VkPipelineMultisampleStateCreateInfo,
+    VkPipelineRasterizationStateCreateInfo,
+    VkPipelineShaderStageCreateInfo,
+    VkPipelineVertexInputStateCreateInfo,
+    VkPipelineViewportStateCreateInfo,
+    VkPolygonMode,
+    VkPrimitiveTopology,
+    VkRect2D, VkShaderModule,
+    VkShaderStageFlagBits,
+    vkUpdateDescriptorSets,
+    VkVertexInputAttributeDescription,
+    VkVertexInputBindingDescription,
+    VkViewport,
+    VkWriteDescriptorSet, VK_COMPARE_OP_ALWAYS, VK_COMPARE_OP_LESS_OR_EQUAL, VK_CULL_MODE_NONE, VK_DYNAMIC_STATE_SCISSOR,
+    VK_DYNAMIC_STATE_VIEWPORT, VK_FRONT_FACE_COUNTER_CLOCKWISE, VK_LOGIC_OP_COPY,
+    VK_LOGIC_OP_NO_OP, VK_POLYGON_MODE_FILL,
+    VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_SAMPLE_COUNT_1_BIT, VK_VERTEX_INPUT_RATE_VERTEX
+} from 'vulkan-api';
 import { ASSERT_VK_RESULT, calculateVertexDescriptorStride, createColorAttachment, createDescPoolSize, createDescriptionLayout, createShaderModule, createVertexDescriptor } from '../utils/helpers';
-import { ResourceList } from '../utils/list';
-import { LogicalDevice } from "./logical.device";
-import { RenderElement } from "./render.element";
+import { LogicalDevice } from './logical.device';
+import { RenderElement } from './render.element';
 import { RenderPass } from './renderpass';
+
 const { GLSL } = essentials;
 
 export class Pipeline extends RenderElement {
-
-    private window: VulkanWindow;
     private renderPass: RenderPass;
     //private pipelines: Map<string, VkPipeline> = new Map<string, VkPipeline>();
 
+    private descLayouts: List<VkDescriptorSetLayout> = new List<VkDescriptorSetLayout>();
+    pipelineLayouts: List<VkPipelineLayout> = new List<VkPipelineLayout>();
+    private pipelineShaders: List<VkPipelineShaderStageCreateInfo[]> = new List<VkPipelineShaderStageCreateInfo[]>();
+    pipelineList: List<VkPipeline> = new List<VkPipeline>();
+    private pipelinePools: List<VkDescriptorPool> = new List<VkDescriptorPool>();
+    private rasterizeInfos: List<VkPipelineRasterizationStateCreateInfo> = new List<VkPipelineRasterizationStateCreateInfo>();
+    private vertexDescriptions: List<VkVertexInputAttributeDescription[]> = new List<VkVertexInputAttributeDescription[]>();
+    private colorBlends: List<VkPipelineColorBlendStateCreateInfo> = new List<VkPipelineColorBlendStateCreateInfo>();
+    private layoutBindings: List<VkDescriptorSetLayoutBinding[]> = new List<VkDescriptorSetLayoutBinding[]>();
+    private depthStencil: List<VkPipelineDepthStencilStateCreateInfo> = new List<VkPipelineDepthStencilStateCreateInfo>();
 
-    private descLayouts: ResourceList<VkDescriptorSetLayout> = new ResourceList<VkDescriptorSetLayout>();
-    pipelineLayouts: ResourceList<VkPipelineLayout> = new ResourceList<VkPipelineLayout>();
-    private pipelineShaders: ResourceList<VkPipelineShaderStageCreateInfo[]> = new ResourceList<VkPipelineShaderStageCreateInfo[]>();
-    pipelineList: ResourceList<VkPipeline> = new ResourceList<VkPipeline>();
-    private pipelinePools: ResourceList<VkDescriptorPool> = new ResourceList<VkDescriptorPool>();
-    private rasterizeInfos: ResourceList<VkPipelineRasterizationStateCreateInfo> = new ResourceList<VkPipelineRasterizationStateCreateInfo>();
-    private vertexDescriptions: ResourceList<VkVertexInputAttributeDescription[]> = new ResourceList<VkVertexInputAttributeDescription[]>();
-    private colorBlends: ResourceList<VkPipelineColorBlendStateCreateInfo> = new ResourceList<VkPipelineColorBlendStateCreateInfo>();
-    private layoutBindings: ResourceList<VkDescriptorSetLayoutBinding[]> = new ResourceList<VkDescriptorSetLayoutBinding[]>();
-    private depthStencil: ResourceList<VkPipelineDepthStencilStateCreateInfo> = new ResourceList<VkPipelineDepthStencilStateCreateInfo>();
-
-
-    constructor(device: LogicalDevice, window: VulkanWindow, renderPass: RenderPass) {
+    constructor(device: LogicalDevice, renderPass: RenderPass) {
         super(device);
-        this.window = window;
         this.renderPass = renderPass;
 
         this.create();
     }
 
-    protected onDestroy() {
-
-    }
+    protected onDestroy() { }
 
     //at first create desc layout
+    protected getFallback<T>(value: Object, fallbackValue: T): T {
+        if (value == undefined || value == null) return fallbackValue;
+        else return value as T;
+    }
 
     protected onCreate() {
+        for (let [key, pipe] of GraphicsModule.getRegisterModules()) {
+            let value = pipe.info;
+            this.createDepthStencil(
+                key,
+                this.getFallback<boolean>(value.depthStencil?.testEnable, false),
+                this.getFallback<boolean>(value.depthStencil?.testWriteEnable, false),
+                this.getFallback<VkCompareOp>(value.depthStencil?.compareOp, VK_COMPARE_OP_LESS_OR_EQUAL),
+                false,
+                false,
+                0,
+                this.getFallback<number>(value.depthStencil?.maxBounds, 0.0),
+            );
+
+            let shaders = [];
+            for (let shader of value.shaders) {
+                var extension = shader.substring(shader.lastIndexOf('.') + 1);
+                shaders.push(this.createShader(shader, extension));
+            }
+
+            this.pipelineShaders.add(key, shaders);
+
+            let descLayouts: VkDescriptorSetLayoutBinding[] = [];
+            let vertexAttributes: VkVertexInputAttributeDescription[] = [];
+
+            if (pipe.info.descriptors != undefined && pipe.info.descriptors.length > 0) {
+                for (let registervalue of pipe.info.descriptors) {
+                    descLayouts.push(createDescriptionLayout(registervalue.bind, registervalue.type, registervalue.flags));
+                }
+            }
+            if (pipe.info.vertexDesc != undefined && pipe.info.vertexDesc.length > 0) {
+                for (let registervalue of pipe.info.vertexDesc) {
+                    let stride = 0;
+                    let key = 0;
+
+                    for (let vertexDesc of registervalue.list) {
+                        let attribute = createVertexDescriptor(key, stride, vertexDesc, registervalue.bind);
+                        stride += calculateVertexDescriptorStride([attribute]);
+                        vertexAttributes.push(attribute);
+
+                        key++;
+                    }
+                }
+            }
 
 
-        this.createDepthStencil('mesh', false, false, VK_COMPARE_OP_LESS_OR_EQUAL, false, false, 0, 0);
-        this.createDepthStencil('prosky', true, true, VK_COMPARE_OP_LESS_OR_EQUAL, false, false, 0, 1.0);
-        this.createDepthStencil('sky', true, true, VK_COMPARE_OP_LESS_OR_EQUAL, false, false, 0, 1.0);
-        this.createDepthStencil('ui', true, true, VK_COMPARE_OP_LESS_OR_EQUAL, false, false, 0, 1.0);
-        this.createDepthStencil('grid', false, false, VK_COMPARE_OP_GREATER_OR_EQUAL, false, false, 0, 0.0);
-        this.createDepthStencil('primitive', false, false, VK_COMPARE_OP_GREATER_OR_EQUAL, false, false, 0, 0.0);
-
-
-        this.createDescLayout('mesh',
-            [
-                createDescriptionLayout(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT),
-                createDescriptionLayout(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT),
-                createDescriptionLayout(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+            this.vertexDescriptions.add(key, vertexAttributes);
+            this.createDescLayout(key, descLayouts);
+            this.createPipeLineLayout(key);
+            this.createColorBlend(key, this.getFallback<VkLogicOp>(value.colorBlend?.logicOp, VK_LOGIC_OP_NO_OP), [
+                createColorAttachment(this.getFallback<boolean>(value.colorBlend?.blendEnable, false)),
             ]);
+            this.createRasterizeInfo(
+                key,
+                this.getFallback<VkCullModeFlagBits>(value.rasterize?.cullMode, VK_CULL_MODE_NONE),
+                this.getFallback<VkFrontFace>(value.rasterize?.frontFace, VK_FRONT_FACE_COUNTER_CLOCKWISE),
+                this.getFallback<VkPolygonMode>(value.rasterize?.polyMode, VK_POLYGON_MODE_FILL),
+            );
 
-        this.createDescLayout('prosky',
-            [
-                createDescriptionLayout(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT),
-                createDescriptionLayout(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT),
-                createDescriptionLayout(2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT),
-            ]);
+            let topology = VkPrimitiveTopology.VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 
-        this.createDescLayout('grid',
-            [
-
-                createDescriptionLayout(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT),
-                createDescriptionLayout(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT),
-
-            ]);
-        this.createDescLayout('primitive',
-            [
-
-                createDescriptionLayout(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT),
-                createDescriptionLayout(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT),
-                createDescriptionLayout(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-
-            ]);
-        this.createDescLayout('sky',
-            [
-                createDescriptionLayout(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT),
-                createDescriptionLayout(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT),
-                createDescriptionLayout(2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT),
-                createDescriptionLayout(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-
-            ]);
-
-        this.createDescLayout('ui',
-            [
-                createDescriptionLayout(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT),
-                createDescriptionLayout(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-
-            ]);
-
-        this.createPipeLineLayout('mesh');
-        this.createPipeLineLayout('prosky');
-        this.createPipeLineLayout('grid');
-        this.createPipeLineLayout('sky');
-        this.createPipeLineLayout('ui');
-        this.createPipeLineLayout('primitive');
-
-        this.pipelineShaders.add('mesh',
-            [
-                this.createShader('./shaders/mesh.vert', 'vert'),
-                this.createShader('./shaders/mesh.frag', 'frag')
-            ]);
-
-        this.pipelineShaders.add('sky',
-            [
-                this.createShader('./shaders/sky.vert', 'vert'),
-                this.createShader('./shaders/sky.frag', 'frag')
-            ]);
-
-        this.pipelineShaders.add('ui',
-            [
-                this.createShader('./shaders/ui.vert', 'vert'),
-                this.createShader('./shaders/ui.frag', 'frag')
-            ]);
-
-        this.pipelineShaders.add('prosky',
-            [
-                this.createShader('./shaders/prosky.vert', 'vert'),
-                this.createShader('./shaders/prosky.frag', 'frag')
-            ]);
-
-
-        this.pipelineShaders.add('grid',
-            [
-                this.createShader('./shaders/grid.vert', 'vert'),
-                this.createShader('./shaders/grid.frag', 'frag')
-            ]);
-        this.pipelineShaders.add('primitive',
-            [
-                this.createShader('./shaders/primitive.vert', 'vert'),
-                this.createShader('./shaders/primitive.frag', 'frag')
-            ]);
-
-        this.createRasterizeInfo('mesh', VK_CULL_MODE_BACK_BIT);
-        this.createRasterizeInfo('primitive', VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_CLOCKWISE);
-        this.createRasterizeInfo('prosky', VK_CULL_MODE_FRONT_BIT);
-
-        this.createRasterizeInfo('ui', VK_CULL_MODE_NONE);
-        this.createRasterizeInfo('sky', VK_CULL_MODE_FRONT_BIT);
-        this.createRasterizeInfo('grid', VK_CULL_MODE_NONE);
-
-        this.vertexDescriptions.add('mesh',
-            [
-                createVertexDescriptor(0, 0, VK_FORMAT_R32G32B32_SFLOAT), //vertex
-                createVertexDescriptor(1, 3 * 4, VK_FORMAT_R32G32B32_SFLOAT), //normal
-                createVertexDescriptor(2, 6 * 4, VK_FORMAT_R32G32_SFLOAT) //uv
-            ]);
-
-
-        this.vertexDescriptions.add('primitive',
-            [
-                createVertexDescriptor(0, 0, VK_FORMAT_R32G32_SFLOAT),
-                createVertexDescriptor(1, 2 * 4, VK_FORMAT_R32G32_SFLOAT) //uv
-
-            ]);
-
-        this.vertexDescriptions.add('prosky',
-            [
-                createVertexDescriptor(0, 0, VK_FORMAT_R32G32B32_SFLOAT)
-            ]);
-
-        this.vertexDescriptions.add('sky',
-            [
-                createVertexDescriptor(0, 0, VK_FORMAT_R32G32B32_SFLOAT)
-            ]);
-
-        this.vertexDescriptions.add('ui',
-            [
-            ]);
-        this.vertexDescriptions.add('grid',
-            [
-
-            ]);
-
-        this.createColorBlend('mesh', VK_LOGIC_OP_NO_OP, [
-            createColorAttachment()]
-        );
-        this.createColorBlend('primitive', VK_LOGIC_OP_NO_OP, [
-            createColorAttachment(true)]
-        );
-        this.createColorBlend('grid', VK_LOGIC_OP_NO_OP, [
-            createColorAttachment(true)]
-        );
-
-        this.createColorBlend('sky', VK_LOGIC_OP_COPY, [
-            createColorAttachment(true)]
-        );
-
-        this.createColorBlend('ui', VK_LOGIC_OP_COPY, [
-            createColorAttachment(true)]
-        );
-
-        this.createColorBlend('prosky', VK_LOGIC_OP_COPY, [
-            createColorAttachment(true)]
-        );
-
-        this.createPipeline('mesh');
-        this.createPipeline('grid');
-        this.createPipeline('sky');
-        this.createPipeline('ui');
-        this.createPipeline('prosky');
-        this.createPipeline('primitive', VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+            switch (value?.topology) {
+                case RenderTopology.TRINAGLE_LIST:
+                    topology = VkPrimitiveTopology.VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+                    break;
+                case RenderTopology.TRIANGLE_STRIPES:
+                    topology = VkPrimitiveTopology.VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+                    break;
+                default:
+                    break;
+            }
+            this.createPipeline(key, topology);
+        }
 
     }
 
-    createDepthStencil(name: string, testEnable: boolean, testWriteEnable: boolean,
-        depthCompareOp: VkCompareOp, depthBoundTestEnable: boolean,
-        stencilTestEnable: boolean, minBound: number, maxBound: number) {
-
+    createDepthStencil(
+        name: string,
+        testEnable: boolean,
+        testWriteEnable: boolean,
+        depthCompareOp: VkCompareOp,
+        depthBoundTestEnable: boolean,
+        stencilTestEnable: boolean,
+        minBound: number,
+        maxBound: number,
+    ) {
         let depthStencilInfo = new VkPipelineDepthStencilStateCreateInfo();
         depthStencilInfo.depthTestEnable = testEnable;
         depthStencilInfo.depthWriteEnable = testWriteEnable;
@@ -231,11 +181,9 @@ export class Pipeline extends RenderElement {
         this.depthStencil.add(name, depthStencilInfo);
     }
 
+    updateDescriptions(pipeName: string, mesh: RenderableNode, setList: VkWriteDescriptorSet[]) {
 
-    updateDescriptions(pipeName: string, mesh: Geometry, setList: VkWriteDescriptorSet[]) {
-
-        console.log("Update uniforms for " + pipeName);
-
+        console.log("[Pipeline] Update descritions");
         let pool = this.pipelinePools.get(pipeName);
         let descLayout = this.descLayouts.get(pipeName);
 
@@ -249,27 +197,25 @@ export class Pipeline extends RenderElement {
 
         let bindings = this.layoutBindings.get(pipeName);
 
-        if (bindings.length != setList.length)
-            throw new Error("Binding size needs to be : " + bindings.length);
+        if (bindings.length != setList.length) throw new Error('Binding size needs to be : ' + bindings.length + " but is " + setList.length);
 
         for (let setId in setList.sort((a, b) => a.dstBinding - b.dstBinding)) {
             let bind = bindings[setId];
             let set = setList[setId];
 
             if (bind.binding != set.dstBinding)
-                throw new Error("Not the same  dstBinding for pipe " + pipeName + " for bind: " + set.dstBinding + " needs to be " + bind.binding + " but got " + set.dstBinding);
+                throw new Error('Not the same  dstBinding for pipe ' + pipeName + ' for bind: ' + set.dstBinding + ' needs to be ' + bind.binding + ' but got ' + set.dstBinding);
 
-            if (bind.descriptorType != set.descriptorType)
-                throw new Error("Not the same desc type  " + pipeName + " for bind: " + set.dstBinding);
+            if (bind.descriptorType != set.descriptorType) throw new Error('Not the same desc type  ' + pipeName + ' for bind: ' + set.dstBinding);
 
             setList[setId].dstSet = mesh.descriptorSet;
         }
 
         let setVlaues = [...setList.values()];
         vkUpdateDescriptorSets(this.device.handle, setVlaues.length, setVlaues, 0, null);
-    };
+    }
 
-    private createPipeline(name: string, primType: VkPrimitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST ) {
+    private createPipeline(name: string, primType: VkPrimitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST) {
         let pipelineLayout = this.pipelineLayouts.get(name);
         let shaderStages = this.pipelineShaders.get(name);
         let rasterRizeInfo = this.rasterizeInfos.get(name);
@@ -277,27 +223,40 @@ export class Pipeline extends RenderElement {
         let colorBlend = this.colorBlends.get(name);
         let depthStencil = this.depthStencil.getOrNull(name);
 
-        let dynamicStates = new Int32Array([
-            VK_DYNAMIC_STATE_VIEWPORT,
-            VK_DYNAMIC_STATE_SCISSOR
-        ]);
+        let dynamicStates = new Int32Array([VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR]);
 
         let pipelineDynamicStateInfo = new VkPipelineDynamicStateCreateInfo();
         pipelineDynamicStateInfo.dynamicStateCount = dynamicStates.length;
         pipelineDynamicStateInfo.pDynamicStates = dynamicStates;
 
-
         let vertexInputInfo = new VkPipelineVertexInputStateCreateInfo();
 
         if (vertexDesciptors.length > 0) {
+            let binding = 0;
+            let vertexDescBinds: VkVertexInputBindingDescription[] = [];
+            for (let desc of vertexDesciptors) {
+                let vertexDescBind = new VkVertexInputBindingDescription();
+                vertexDescBind.binding = binding;
+                vertexDescBind.stride = calculateVertexDescriptorStride([desc]);
+                vertexDescBind.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+                vertexDescBinds.push(vertexDescBind);
+                binding++;
+            }
+
             let posVertexBindingDescr = new VkVertexInputBindingDescription();
 
             posVertexBindingDescr.binding = 0;
             posVertexBindingDescr.stride = calculateVertexDescriptorStride(vertexDesciptors);
             posVertexBindingDescr.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
+            /*
+            vertexInputInfo.vertexBindingDescriptionCount =
+                vertexDescBinds.length;
+            vertexInputInfo.pVertexBindingDescriptions = vertexDescBinds;
+       */
             vertexInputInfo.vertexBindingDescriptionCount = 1;
+
             vertexInputInfo.pVertexBindingDescriptions = [posVertexBindingDescr];
+
             vertexInputInfo.vertexAttributeDescriptionCount = vertexDesciptors.length;
             vertexInputInfo.pVertexAttributeDescriptions = vertexDesciptors;
         }
@@ -336,26 +295,27 @@ export class Pipeline extends RenderElement {
 
         this.pipelineList.add(name, pipe);
     }
+
     private loadShader(filename, ext) {
         return GLSL.toSPIRVSync({
             source: fs.readFileSync(filename),
-            extension: ext
+            extension: ext,
         }).output;
     }
 
     private createShader(filename: string, ext: string) {
-
-        console.log("[Shader][" + filename + "] Loaded");
+        console.log('[Shader][' + filename + '] Loaded');
         let shaderFlag: VkShaderStageFlagBits;
         switch (ext) {
-            case "vert":
+            case 'vert':
                 shaderFlag = VkShaderStageFlagBits.VK_SHADER_STAGE_VERTEX_BIT;
                 break;
 
-            case "frag":
+            case 'frag':
                 shaderFlag = VkShaderStageFlagBits.VK_SHADER_STAGE_FRAGMENT_BIT;
                 break;
-            default: throw new Error("Cant find module");
+            default:
+                throw new Error('Cant find module');
         }
 
         let shaderModule = createShaderModule(this.device.handle, this.loadShader(filename, ext), new VkShaderModule());
@@ -363,7 +323,7 @@ export class Pipeline extends RenderElement {
         let shaderStageInfoVert = new VkPipelineShaderStageCreateInfo();
         shaderStageInfoVert.stage = shaderFlag;
         shaderStageInfoVert.module = shaderModule;
-        shaderStageInfoVert.pName = "main";
+        shaderStageInfoVert.pName = 'main';
 
         return shaderStageInfoVert;
     }
@@ -382,7 +342,7 @@ export class Pipeline extends RenderElement {
         this.layoutBindings.add(name, bindings);
 
         //create pool desctiptor
-        let poolSizes = bindings.map(df => createDescPoolSize(df.descriptorType));
+        let poolSizes = bindings.map((df) => createDescPoolSize(df.descriptorType));
 
         let descriptorPoolInfo = new VkDescriptorPoolCreateInfo();
         descriptorPoolInfo.poolSizeCount = poolSizes.length;
@@ -396,7 +356,12 @@ export class Pipeline extends RenderElement {
         this.pipelinePools.add(name, pool);
     }
 
-    private createRasterizeInfo(name: string, cullMode: VkCullModeFlagBits = VK_CULL_MODE_NONE, frontFace: VkFrontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE, polyMode: VkPolygonMode = VK_POLYGON_MODE_FILL) {
+    private createRasterizeInfo(
+        name: string,
+        cullMode: VkCullModeFlagBits = VK_CULL_MODE_NONE,
+        frontFace: VkFrontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
+        polyMode: VkPolygonMode = VK_POLYGON_MODE_FILL,
+    ) {
         let rasterizationInfo = new VkPipelineRasterizationStateCreateInfo();
         rasterizationInfo.depthClampEnable = false;
         rasterizationInfo.rasterizerDiscardEnable = false;
@@ -417,9 +382,9 @@ export class Pipeline extends RenderElement {
 
         let pipelineLayout = new VkPipelineLayout();
         let pipelineLayoutInfo = new VkPipelineLayoutCreateInfo();
-        pipelineLayoutInfo.setLayoutCount = (layout != null) ? 1 : 0;
+        pipelineLayoutInfo.setLayoutCount = layout != null ? 1 : 0;
         pipelineLayoutInfo.pushConstantRangeCount = 0;
-        pipelineLayoutInfo.pSetLayouts = (layout != null) ? [layout] : null;
+        pipelineLayoutInfo.pSetLayouts = layout != null ? [layout] : null;
 
         let result = vkCreatePipelineLayout(this.device.handle, pipelineLayoutInfo, null, pipelineLayout);
         ASSERT_VK_RESULT(result);
@@ -432,8 +397,8 @@ export class Pipeline extends RenderElement {
         let viewport = new VkViewport();
         viewport.x = 0;
         viewport.y = 0;
-        viewport.width = this.window.width;
-        viewport.height = this.window.height;
+        viewport.width = GraphicsModule.mainWindow.width;
+        viewport.height = GraphicsModule.mainWindow.height;
         viewport.minDepth = 0.0;
         viewport.maxDepth = 1.0;
 
@@ -442,8 +407,8 @@ export class Pipeline extends RenderElement {
         scissorOffset.y = 0;
 
         let scissorExtent = new VkExtent2D();
-        scissorExtent.width = this.window.width;
-        scissorExtent.height = this.window.height;
+        scissorExtent.width = GraphicsModule.mainWindow.width;
+        scissorExtent.height = GraphicsModule.mainWindow.height;
 
         let scissor = new VkRect2D();
         scissor.offset = scissorOffset;
@@ -458,8 +423,6 @@ export class Pipeline extends RenderElement {
         return viewportStateInfo;
     }
 
-
-
     private createColorBlend(name: string, logicOp: VkLogicOp, attachments: VkPipelineColorBlendAttachmentState[]) {
         let colorBlendInfo = new VkPipelineColorBlendStateCreateInfo();
         colorBlendInfo.logicOpEnable = false;
@@ -470,5 +433,7 @@ export class Pipeline extends RenderElement {
 
         this.colorBlends.add(name, colorBlendInfo);
     }
+
+
 
 }

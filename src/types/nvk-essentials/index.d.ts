@@ -1,1 +1,0 @@
-declare module 'nvk-essentials';

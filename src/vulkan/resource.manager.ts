@@ -1,15 +1,14 @@
-import { Texture2D } from "../resources/2d/Texture2D";
-import { EngineObject } from '../resources/core/EngineObject';
+import { EngineObject } from "@engine/nodes";
 
 export class ResourceManager {
     static resources: Map<string, EngineObject> = new Map<string, EngineObject>();
 
     static add(resource: EngineObject) {
-        if (ResourceManager.resources.has(resource.id)) {
+        if (ResourceManager.resources.has(resource.id.toString())) {
             return;
         }
         else {
-            ResourceManager.resources.set(resource.id, resource);
+            ResourceManager.resources.set(resource.id.toString(), resource);
         }
     }
 

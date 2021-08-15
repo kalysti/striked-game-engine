@@ -1,7 +1,6 @@
-import { Vector2D } from '../../math/Vector2D';
-import { Vector3D } from "../../math/Vector3D";
 import { Mesh3D } from "./Mesh3D";
-import { Transform } from '../../math/Transform';
+import { Vector2D, Transform, Vector3D } from '@engine/types';
+import { RenderableRenderer } from "@engine/modules";
 
 export class CubeMesh extends Mesh3D {
 
@@ -138,4 +137,9 @@ export class CubeMesh extends Mesh3D {
             new Vector2D(0.0, 0.0)
         ];
     }
+
+    onRender(renderer: RenderableRenderer) {
+
+    }
+
 }

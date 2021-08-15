@@ -2,6 +2,7 @@ import { VkComponentMapping, vkCreateImageView, vkCreateSwapchainKHR, vkDestroyI
 import { ASSERT_VK_RESULT } from "../utils/helpers";
 import { LogicalDevice } from './logical.device';
 import { RenderElement } from './render.element';
+import { GraphicsModule } from '@engine/modules';
 
 export class Swapchain extends RenderElement {
     private swapchain: VkSwapchainKHR | null = null;
@@ -32,10 +33,9 @@ export class Swapchain extends RenderElement {
         //vkDestroyShaderModule(device, fragShaderModule, null);
     };
 
-    constructor(device: LogicalDevice, surface: VkSurfaceKHR, window: VulkanWindow) {
+    constructor(device: LogicalDevice, surface: VkSurfaceKHR) {
         super(device);
         this.surface = surface;
-        this.window = window;
         this.create();
     }
 
@@ -46,14 +46,15 @@ export class Swapchain extends RenderElement {
 
     createSwapChain() {
 
+
         let swap = new VkSwapchainKHR();
         let swapchainInfo = new VkSwapchainCreateInfoKHR();
         swapchainInfo.surface = this.surface;
         swapchainInfo.minImageCount = 3;
         swapchainInfo.imageFormat = VK_FORMAT_B8G8R8A8_UNORM;
         swapchainInfo.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-        swapchainInfo.imageExtent.width = this.window.width;
-        swapchainInfo.imageExtent.height = this.window.height;
+        swapchainInfo.imageExtent.width = GraphicsModule.mainWindow.width;
+        swapchainInfo.imageExtent.height = GraphicsModule.mainWindow.height;
         swapchainInfo.imageArrayLayers = 1;
         swapchainInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
         swapchainInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;

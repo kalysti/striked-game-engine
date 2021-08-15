@@ -6,8 +6,8 @@ out gl_PerVertex {
 };
 
 layout (location = 0) in vec3 aVertexPosition;
-layout (location = 1) in vec3 aVertexNormal;
-layout (location = 2) in vec2 aTextureCoord;
+layout (location = 1, set = 1) in vec3 aVertexNormal;
+layout (location = 2 , set = 2) in vec2 aTextureCoord;
 
 layout (location = 0) out vec3 vSurfaceNormal;
 layout (location = 1) out vec3 vCameraPosition;

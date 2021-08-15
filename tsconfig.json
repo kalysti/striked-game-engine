@@ -1,5 +1,6 @@
 {
     "compilerOptions": {
+        "experimentalDecorators": true,
         "target": "esnext",
         "module": "commonjs",
         "strict": false,
@@ -8,23 +9,33 @@
         "sourceMap": true,
         "esModuleInterop": true,
         "checkJs": false,
+        "declaration": true,
         "skipLibCheck": true,
         "moduleResolution": "node",
         "baseUrl": ".",
+        "rootDir": "./src",
         "lib": [
             "es6",
             "dom",
         ],
+        "rootDirs": [
+            "src",
+        ],
+
         "paths": {
+            "@engine/*": [ "src/*" ],
+            "@engine/nodes/*": [ "src/nodes/*" ],
+            "@engine/resources/*": [ "src/resources/*" ],
+            "@render": [ "src/vulkan" ],
+
             "*": [
-                "src/types/*",
                 "node_modules/*",
                 "node_modules/@types/uuid/*",
                 "node_modules/vulkan-api/generated/1.2.162/win32/*",
             ]
         },
         "typeRoots": [
-            "src/types",
+            "src/thirdparty",
             "node_modules/@types",
         ],
     },

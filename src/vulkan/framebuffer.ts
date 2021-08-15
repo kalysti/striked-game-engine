@@ -1,18 +1,18 @@
-import { vkCreateFramebuffer, vkDestroyFramebuffer, VkFramebuffer, VkFramebufferCreateInfo, VulkanWindow } from 'vulkan-api';
-import { Texture2D } from '../resources/2d/Texture2D';
+import { vkCreateFramebuffer, vkDestroyFramebuffer, VkFramebuffer, VkFramebufferCreateInfo } from 'vulkan-api';
 import { ASSERT_VK_RESULT } from '../utils/helpers';
 import { LogicalDevice } from './logical.device';
 import { RenderElement } from './render.element';
 import { RenderPass } from './renderpass';
 import { Swapchain } from './swapchain';
+import { VulkanTextureBuffer } from './texture.buffer';
+import { GraphicsModule } from '@engine/modules';
 
 export class Framebuffer extends RenderElement {
 
     private swapChain: Swapchain;
-    private window: VulkanWindow;
     private renderPass: RenderPass;
     private framebuffers: VkFramebuffer[] = [];
-    depthTexture: Texture2D;
+    depthTexture: VulkanTextureBuffer;
 
     get handleBuffers() {
         return this.framebuffers;
@@ -36,8 +36,8 @@ export class Framebuffer extends RenderElement {
             framebufferInfo.attachmentCount = attachments.length;
             
             framebufferInfo.pAttachments = attachments;
-            framebufferInfo.width = this.window.width;
-            framebufferInfo.height = this.window.height;
+            framebufferInfo.width = GraphicsModule.mainWindow.width;
+            framebufferInfo.height = GraphicsModule.mainWindow.height;
             framebufferInfo.layers = 1;
             let result = vkCreateFramebuffer(this.device.handle, framebufferInfo, null, fbs[ii]);
             ASSERT_VK_RESULT(result);
@@ -46,11 +46,10 @@ export class Framebuffer extends RenderElement {
         this.framebuffers = fbs;
     }
 
-    constructor(device: LogicalDevice, swapChain: Swapchain, renderPass: RenderPass, window: VulkanWindow, depthTexture: Texture2D) {
+    constructor(device: LogicalDevice, swapChain: Swapchain, renderPass: RenderPass, depthTexture: VulkanTextureBuffer) {
 
         super(device);
         this.swapChain = swapChain;
-        this.window = window;
         this.renderPass = renderPass;
         this.depthTexture = depthTexture;
 

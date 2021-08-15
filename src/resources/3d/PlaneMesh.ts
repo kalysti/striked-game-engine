@@ -1,6 +1,7 @@
-import { Vector2D } from '../../math/Vector2D';
-import { Vector3D } from "../../math/Vector3D";
+
 import { Mesh3D } from "./Mesh3D";
+import { Vector2D, Vector3D } from '@engine/types';
+import { RenderableRenderer } from "@engine/modules";
 
 export class PlaneMesh extends Mesh3D {
 
@@ -12,6 +13,11 @@ export class PlaneMesh extends Mesh3D {
         this.generateVertices();
         this.generateColors();
         this.generateNormals();
+    }
+
+    onRender(renderer: RenderableRenderer)
+    {
+        
     }
 
     private generateColors() {

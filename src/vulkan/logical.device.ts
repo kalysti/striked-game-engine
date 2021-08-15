@@ -82,6 +82,7 @@ export class LogicalDevice extends RenderBackplane {
         deviceInfo.enabledExtensionCount = deviceExtensions.length;
         deviceInfo.ppEnabledExtensionNames = deviceExtensions.map(t => t.toString());
         deviceInfo.pEnabledFeatures = new VkPhysicalDeviceFeatures();
+        deviceInfo.pEnabledFeatures.samplerAnisotropy = true;
 
         let result = vkCreateDevice(this.physicalDevice.handle, deviceInfo, null, this.device);
         ASSERT_VK_RESULT(result);
